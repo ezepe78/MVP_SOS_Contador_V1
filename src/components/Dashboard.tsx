@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { DashboardHome } from './DashboardHome';
 import { ClientesList } from './ClientesList';
 import { IvaVentas } from './IvaVentas';
 import { LibroMayor } from './LibroMayor';
-import { Building2, Users, FileText, Menu, X, BookOpen } from 'lucide-react';
+import { SumasYSaldos } from './SumasYSaldos';
+import { Building2, Users, FileText, Menu, X, BookOpen, Calculator, LayoutDashboard, Scale } from 'lucide-react';
 
 export const Dashboard: React.FC = () => {
   const { selectedCuit, clearCuitSelection, logout } = useAuth();
-  const [activeView, setActiveView] = useState<'clientes' | 'iva' | 'mayor'>('clientes');
+  const [activeView, setActiveView] = useState<'dashboard' | 'clientes' | 'iva' | 'mayor' | 'sumasysaldos'>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
@@ -42,7 +44,9 @@ export const Dashboard: React.FC = () => {
               title="Cambiar CUIT"
             >
                <div className="font-bold text-text-main">{selectedCuit?.cuit || 'Sin CUIT'}</div>
-               <div className="text-[11px] text-text-muted truncate">{selectedCuit?.razon_social || 'Desconocido'}</div>
+               <div className="text-[11px] text-text-muted truncate">
+                  {selectedCuit?.razonsocial || selectedCuit?.razon_social || 'Desconocido'}
+               </div>
             </div>
 
             <div className="text-[10px] uppercase font-bold text-text-muted mt-[15px] mb-2 tracking-[0.5px]">
@@ -53,22 +57,39 @@ export const Dashboard: React.FC = () => {
           {/* Nav Links */}
           <nav className="flex-1 px-[20px] pb-5 space-y-1 overflow-y-auto">
             <button
-               onClick={() => { setActiveView('clientes'); setIsSidebarOpen(false); }}
-               className={`w-full text-left px-3 py-2 rounded-[6px] text-[14px] mb-1 transition-colors flex flex-col ${activeView === 'clientes' ? 'bg-primary-main text-white' : 'text-text-main hover:bg-bg-app'}`}
+               onClick={() => { setActiveView('dashboard'); setIsSidebarOpen(false); }}
+               className={`w-full text-left px-3 py-2.5 rounded-[8px] mb-1 transition-all flex items-center gap-3 ${activeView === 'dashboard' ? 'bg-primary-main text-white shadow-md shadow-primary-main/20' : 'text-text-main hover:bg-bg-app'}`}
             >
-               <span className="font-bold">Clientes</span>
+               <LayoutDashboard className={`w-4 h-4 ${activeView === 'dashboard' ? 'text-white' : 'text-primary-main'}`} />
+               <span className="font-bold text-[13px]">Dashboard</span>
+            </button>
+            <button
+               onClick={() => { setActiveView('clientes'); setIsSidebarOpen(false); }}
+               className={`w-full text-left px-3 py-2.5 rounded-[8px] mb-1 transition-all flex items-center gap-3 ${activeView === 'clientes' ? 'bg-primary-main text-white shadow-md shadow-primary-main/20' : 'text-text-main hover:bg-bg-app'}`}
+            >
+               <Users className={`w-4 h-4 ${activeView === 'clientes' ? 'text-white' : 'text-primary-main'}`} />
+               <span className="font-bold text-[13px]">Clientes</span>
             </button>
             <button
                onClick={() => { setActiveView('iva'); setIsSidebarOpen(false); }}
-               className={`w-full text-left px-3 py-2 rounded-[6px] text-[14px] mb-1 transition-colors flex flex-col ${activeView === 'iva' ? 'bg-primary-main text-white' : 'text-text-main hover:bg-bg-app'}`}
+               className={`w-full text-left px-3 py-2.5 rounded-[8px] mb-1 transition-all flex items-center gap-3 ${activeView === 'iva' ? 'bg-primary-main text-white shadow-md shadow-primary-main/20' : 'text-text-main hover:bg-bg-app'}`}
             >
-               <span className="font-bold">Libro IVA Ventas</span>
+               <Calculator className={`w-4 h-4 ${activeView === 'iva' ? 'text-white' : 'text-primary-main'}`} />
+               <span className="font-bold text-[13px]">Libro IVA Ventas</span>
             </button>
             <button
                onClick={() => { setActiveView('mayor'); setIsSidebarOpen(false); }}
-               className={`w-full text-left px-3 py-2 rounded-[6px] text-[14px] mb-1 transition-colors flex flex-col ${activeView === 'mayor' ? 'bg-primary-main text-white' : 'text-text-main hover:bg-bg-app'}`}
+               className={`w-full text-left px-3 py-2.5 rounded-[8px] mb-1 transition-all flex items-center gap-3 ${activeView === 'mayor' ? 'bg-primary-main text-white shadow-md shadow-primary-main/20' : 'text-text-main hover:bg-bg-app'}`}
             >
-               <span className="font-bold">Libro Mayor</span>
+               <FileText className={`w-4 h-4 ${activeView === 'mayor' ? 'text-white' : 'text-primary-main'}`} />
+               <span className="font-bold text-[13px]">Libro Mayor</span>
+            </button>
+            <button
+               onClick={() => { setActiveView('sumasysaldos'); setIsSidebarOpen(false); }}
+               className={`w-full text-left px-3 py-2.5 rounded-[8px] mb-1 transition-all flex items-center gap-3 ${activeView === 'sumasysaldos' ? 'bg-primary-main text-white shadow-md shadow-primary-main/20' : 'text-text-main hover:bg-bg-app'}`}
+            >
+               <Scale className={`w-4 h-4 ${activeView === 'sumasysaldos' ? 'text-white' : 'text-primary-main'}`} />
+               <span className="font-bold text-[13px]">Sumas y Saldos</span>
             </button>
           </nav>
 
@@ -97,9 +118,11 @@ export const Dashboard: React.FC = () => {
         </header>
 
         <div className="flex-1 overflow-y-auto w-full p-0 flex flex-col">
+          {activeView === 'dashboard' && <DashboardHome />}
           {activeView === 'clientes' && <ClientesList />}
           {activeView === 'iva' && <IvaVentas />}
           {activeView === 'mayor' && <LibroMayor />}
+          {activeView === 'sumasysaldos' && <SumasYSaldos />}
         </div>
       </main>
 

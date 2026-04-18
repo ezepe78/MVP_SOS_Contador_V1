@@ -1,2 +1,13 @@
+<<<<<<< HEAD
 node_modules/
 .env
+=======
+node_modules
+dist
+.env
+.DS_Store
+*.log
+.gemini
+artifacts
+scratch
+>>>>>>> 6a52360 (feat: optimizaciones de performance (cache/concurrencia), memoización de filas y nueva vista Sumas y Saldos)

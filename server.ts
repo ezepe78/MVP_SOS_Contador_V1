@@ -9,14 +9,16 @@ async function startServer() {
 
   // The actual SOS Contador API URL. This should be configured in the environment.
   // We default to the most likely known subdomains.
-  const targetApi = process.env.SOS_API_URL || 'https://api.sos-contador.com';
-
+  const targetApi = process.env.SOS_API_URL || 'https://api.sos-contador.com/api-comunidad';
+  
   console.log(`Setting up API proxy to target: ${targetApi}`);
 
+  // Mapeamos /api local a /api-comunidad en el servidor real.
+  // Express elimina /api del path y el proxy lo añade al target.
   app.use('/api', createProxyMiddleware({
     target: targetApi,
     changeOrigin: true,
-    pathRewrite: { '^/api': '/api' },
+    pathRewrite: { '^/api': '' }, // Eliminamos /api para que se añada al base URL del target
     onProxyReq: (proxyReq) => {
         // Log outgoing proxy requests for debugging
         console.log(`[PROXY] ${proxyReq.method} ${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`);

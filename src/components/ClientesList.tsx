@@ -3,6 +3,17 @@ import { useAuth } from '../context/AuthContext';
 import { sosApi } from '../api/sos';
 import { Search, ChevronLeft, ChevronRight, User } from 'lucide-react';
 
+const ClienteRow = React.memo(({ cliente }: { cliente: any }) => (
+  <tr>
+    <td className="px-5 py-3 border-b border-border-main text-[13px] whitespace-nowrap overflow-hidden text-ellipsis text-text-main font-bold">
+      {cliente.clipro || cliente.razonsocial || cliente.razon_social || cliente.nombre || '-'}
+    </td>
+    <td className="px-5 py-3 border-b border-border-main text-[12px] font-mono text-text-main">
+      {cliente.cuit || '-'}
+    </td>
+  </tr>
+));
+
 export const ClientesList: React.FC = () => {
   const { jwtc } = useAuth();
   const [clientes, setClientes] = useState<any[]>([]);
@@ -14,8 +25,10 @@ export const ClientesList: React.FC = () => {
   const registrosPorPagina = 50;
 
   useEffect(() => {
-    fetchClientes();
-  }, [page]); 
+    if (jwtc) {
+      fetchClientes();
+    }
+  }, [page, jwtc]); 
   
   // Separamos la busqueda del effect para optimizar llamadas
   const handleSearch = (e: React.FormEvent) => {
@@ -33,8 +46,27 @@ export const ClientesList: React.FC = () => {
         registros: registrosPorPagina,
         txbuscar: searchTerm
       });
-      // Puede devolver array directo o { data: [], total: ... }
-      setClientes(Array.isArray(resp) ? resp : resp.data || []);
+      // Usamos lógica robusta de extracción (igual que en el dashboard)
+      let itemsArray: any[] = [];
+      if (Array.isArray(resp)) {
+        itemsArray = resp;
+      } else if (resp && typeof resp === 'object') {
+        // Claves conocidas en SOS: 'items' para clientes, 'libros' para IVA, etc.
+        const candidates = ['items', 'libros', 'comprobantes', 'data', 'listado', 'resultados'];
+        for (const key of candidates) {
+          if (resp[key] && Array.isArray(resp[key])) {
+            itemsArray = resp[key];
+            break;
+          }
+        }
+        // Fallback: buscar el primer array que aparezca en el objeto
+        if (itemsArray.length === 0) {
+          const possibleArray = Object.values(resp).find(val => Array.isArray(val));
+          if (possibleArray) itemsArray = possibleArray as any[];
+        }
+      }
+      
+      setClientes(itemsArray);
     } catch (err: any) {
       setError(err?.message || 'Error al obtener clientes');
     } finally {
@@ -108,14 +140,7 @@ export const ClientesList: React.FC = () => {
                   </thead>
                   <tbody>
                     {clientes.map((cliente, idx) => (
-                      <tr key={cliente.idcliente || cliente.id || idx}>
-                        <td className="px-5 py-3 border-b border-border-main text-[13px] whitespace-nowrap overflow-hidden text-ellipsis text-text-main font-bold">
-                          {cliente.razon_social || cliente.nombre || '-'}
-                        </td>
-                        <td className="px-5 py-3 border-b border-border-main text-[12px] font-mono text-text-main">
-                          {cliente.cuit || '-'}
-                        </td>
-                      </tr>
+                      <ClienteRow key={cliente.idcliente || cliente.id || idx} cliente={cliente} />
                     ))}
                   </tbody>
                 </table>

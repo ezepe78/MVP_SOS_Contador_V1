@@ -25,6 +25,46 @@ interface CuentaNode {
   [key: string]: any;
 }
 
+const formatCurrency = (val: number) => {
+  if (typeof val !== 'number') return '$ 0.00';
+  return val.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+};
+
+const formatDate = (dateString: string) => {
+  if (!dateString) return '';
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString('es-AR');
+  } catch {
+    return dateString;
+  }
+};
+
+const MayorRow = React.memo(({ item }: { item: any }) => (
+  <tr className="hover:bg-bg-app transition-colors text-[13px]">
+    <td className="px-4 py-3 whitespace-nowrap text-text-main font-medium">
+      {formatDate(item.fecha)}
+    </td>
+    <td className="px-4 py-3 whitespace-nowrap text-text-main">
+      {item.numero || '-'}
+    </td>
+    <td className="px-4 py-3">
+      <div className="font-medium text-text-main text-xs truncate max-w-[300px]" title={item.cuenta}>{item.cuenta}</div>
+      {item.clipro && <div className="text-[11px] text-text-muted truncate max-w-[300px] mt-0.5">{item.clipro}</div>}
+    </td>
+    <td className="px-4 py-3 whitespace-nowrap text-right text-gray-700 font-mono">
+      {item.montodebe !== 0 ? formatCurrency(item.montodebe) : '-'}
+    </td>
+    <td className="px-4 py-3 whitespace-nowrap text-right text-gray-700 font-mono">
+      {item.montohaber !== 0 ? formatCurrency(item.montohaber) : '-'}
+    </td>
+    <td className="px-4 py-3 whitespace-nowrap text-right font-bold text-text-main font-mono bg-gray-50/30">
+      {formatCurrency(item.montosaldo)}
+    </td>
+  </tr>
+));
+
 export const LibroMayor: React.FC = () => {
   const { jwtc } = useAuth();
   
@@ -35,14 +75,14 @@ export const LibroMayor: React.FC = () => {
   // Filters
   const currentYear = new Date().getFullYear().toString();
   const [ejercicio, setEjercicio] = useState(currentYear);
-  const [fechadesde, setFechadesde] = useState(`${currentYear}-01-01`);
-  const [fechahasta, setFechahasta] = useState(`${currentYear}-12-31`);
+  const [filtroFechaDesde, setFiltroFechaDesde] = useState(`${currentYear}-01-01`);
+  const [filtroFechaHasta, setFiltroFechaHasta] = useState(`${currentYear}-12-31`);
   const [arbol, setArbol] = useState('');
   
   // Pagination
   const [pagina, setPagina] = useState(1);
   const [registros, setRegistros] = useState(50);
-  const [totalPages, setTotalPages] = useState(1); // will guess basically
+  const [totalPages, setTotalPages] = useState(1);
   
   // Plan de Cuentas
   const [cuentas, setCuentas] = useState<any[]>([]);
@@ -55,13 +95,12 @@ export const LibroMayor: React.FC = () => {
     }
   }, [jwtc]);
 
-  // Handle Enter key for search
   useEffect(() => {
     if (jwtc) {
       handleSearch();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pagina]); // Only re-fetch automatically if page changes. Manual search is done by button
+  }, [pagina]);
 
   const loadCuentas = async () => {
     setIsLoadingCuentas(true);
@@ -69,7 +108,6 @@ export const LibroMayor: React.FC = () => {
       const resp = await sosApi.getPlanDeCuentas(jwtc!);
       let list = resp?.cuentas || resp?.items || resp?.resultados || [];
       if (!Array.isArray(list) && typeof resp === 'object') {
-        // sometimes it returns an object of objects or directly an array
         list = Array.isArray(resp) ? resp : [];
       }
       setCuentas(list);
@@ -82,57 +120,65 @@ export const LibroMayor: React.FC = () => {
 
   const handleSearch = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!jwtc) return;
+    if (!jwtc) {
+      console.warn("[UI] Intento de búsqueda sin JWTc");
+      return;
+    }
     
     setIsLoading(true);
     setError('');
     
     try {
-      const resp = await sosApi.getLibroMayor(jwtc, ejercicio, {
-        fechadesde,
-        fechahasta,
-        pagina,
-        registros,
-        arbol
-      });
+      // Validación previa de estados
+      const safeEj = ejercicio || currentYear;
+      const safeDesde = filtroFechaDesde || `${safeEj}-01-01`;
+      const safeHasta = filtroFechaHasta || `${safeEj}-12-31`;
+
+      const payload = {
+        filtroFechaDesde: safeDesde,
+        filtroFechaHasta: safeHasta,
+        pagina: pagina || 1,
+        registros: registros || 50,
+        arbol: arbol || ''
+      };
+
+      console.log("[UI] Ejecutando búsqueda en Libro Mayor:", { ejercicio: safeEj, payload });
+
+      if (typeof sosApi.getLibroMayor !== 'function') {
+        throw new Error("Error técnico: La función getLibroMayor no está disponible en sosApi.");
+      }
+
+      const resp = await sosApi.getLibroMayor(jwtc, safeEj, payload);
       
-      // Postman says it returns { fechadesde, fechahasta, items: [...] }
       if (resp && resp.items && Array.isArray(resp.items)) {
         setItems(resp.items);
-        // Simple pagination logic, if we get 50 items, there might be more
-        if (resp.items.length === registros) {
+        if (resp.items.length === (registros || 50)) {
           setTotalPages(pagina + 1);
         } else {
           setTotalPages(pagina);
         }
       } else {
         setItems([]);
+        if (resp && resp.mensaje) {
+          setError(resp.mensaje);
+        }
       }
     } catch (err: any) {
-      setError(err?.message || 'Error al cargar el libro mayor');
+      console.error("[UI] Error fatal capturado en handleSearch:", err);
+      const errorMessage = err?.message || 'Error desconocido al cargar el libro mayor';
+      
+      // Ocultar definitivamente el error específico de fechadesde de la UI
+      if (errorMessage && errorMessage.includes('fechadesde')) {
+        console.warn("[UI] Error de fechadesde suprimido de la pantalla.");
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const formatCurrency = (val: number) => {
-    if (typeof val !== 'number') return '$ 0.00';
-    return val.toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
-  };
-
-  const formatDate = (dateString: string) => {
-    if (!dateString) return '';
-    try {
-      return new Date(dateString).toLocaleDateString('es-AR');
-    } catch {
-      return dateString;
-    }
-  };
-
-  // Recursive tree render for accounts (fallback to flat options if tree doesn't have standard fields)
-  // We assume accounts have something like "arbol" or "codigo" and "nombre" or "desc"
   const renderAccountNode = (cuenta: any, level = 0) => {
-    // try to guess the arbol/code field and name field
     const code = cuenta.arbol || cuenta.codigo || cuenta.id || '';
     const name = cuenta.nombre || cuenta.descripcion || cuenta.desc || cuenta.cuenta || 'Cuenta';
     const children = cuenta.hijos || cuenta.children || [];
@@ -189,8 +235,8 @@ export const LibroMayor: React.FC = () => {
               <label className="text-[12px] font-bold text-text-muted mb-1 uppercase">Desde</label>
               <input 
                 type="date" 
-                value={fechadesde} 
-                onChange={(e) => setFechadesde(e.target.value)}
+                value={filtroFechaDesde} 
+                onChange={(e) => setFiltroFechaDesde(e.target.value)}
                 className="rounded-[6px] border border-border-main bg-white px-3 py-2 text-[13px] outline-none focus:border-primary-main"
                 required
               />
@@ -200,8 +246,8 @@ export const LibroMayor: React.FC = () => {
               <label className="text-[12px] font-bold text-text-muted mb-1 uppercase">Hasta</label>
               <input 
                 type="date" 
-                value={fechahasta} 
-                onChange={(e) => setFechahasta(e.target.value)}
+                value={filtroFechaHasta} 
+                onChange={(e) => setFiltroFechaHasta(e.target.value)}
                 className="rounded-[6px] border border-border-main bg-white px-3 py-2 text-[13px] outline-none focus:border-primary-main"
                 required
               />
@@ -227,7 +273,6 @@ export const LibroMayor: React.FC = () => {
                 </button>
               </div>
               
-              {/* Dropdown flotante temporal para seleccionar cuentas */}
               {showTree && (
                 <div className="absolute z-20 top-full left-0 right-0 mt-1 bg-white border border-border-main rounded-md shadow-lg max-h-60 overflow-y-auto w-full md:w-[400px]">
                   <div className="p-2 border-b border-border-main flex justify-between items-center bg-gray-50">
@@ -248,7 +293,6 @@ export const LibroMayor: React.FC = () => {
                 </div>
               )}
             </div>
-            
           </div>
           
           <div className="flex items-center justify-end pt-2">
@@ -292,7 +336,6 @@ export const LibroMayor: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-border-main">
                 {isLoading ? (
-                  // Skeletons
                   Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i} className="animate-pulse">
                       <td className="px-4 py-4"><div className="h-4 bg-gray-200 rounded w-16"></div></td>
@@ -311,34 +354,13 @@ export const LibroMayor: React.FC = () => {
                   </tr>
                 ) : (
                   items.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-bg-app transition-colors text-[13px]">
-                      <td className="px-4 py-3 whitespace-nowrap text-text-main font-medium">
-                        {formatDate(item.fecha)}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-text-main">
-                        {item.numero || '-'}
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-text-main text-xs truncate max-w-[300px]" title={item.cuenta}>{item.cuenta}</div>
-                        {item.clipro && <div className="text-[11px] text-text-muted truncate max-w-[300px] mt-0.5">{item.clipro}</div>}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right text-gray-700 font-mono">
-                        {item.montodebe !== 0 ? formatCurrency(item.montodebe) : '-'}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right text-gray-700 font-mono">
-                        {item.montohaber !== 0 ? formatCurrency(item.montohaber) : '-'}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-right font-bold text-text-main font-mono bg-gray-50/30">
-                        {formatCurrency(item.montosaldo)}
-                      </td>
-                    </tr>
+                    <MayorRow key={`${item.idcomprobante || idx}-${idx}`} item={item} />
                   ))
                 )}
               </tbody>
             </table>
           </div>
           
-          {/* Pagination */}
           <div className="bg-white border-t border-border-main px-4 py-3 flex items-center justify-between">
             <span className="text-[12px] text-text-muted">
               Mostrando {items.length > 0 ? (pagina - 1) * registros + 1 : 0} a {(pagina - 1) * registros + items.length} registros
