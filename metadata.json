@@ -1,0 +1,6 @@
+{
+  "name": "Dashboard SOS Contador",
+  "description": "Dashboard web para contadores utilizando la API de SOS Contador. Permite ver clientes y consultar el Libro de IVA Ventas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
