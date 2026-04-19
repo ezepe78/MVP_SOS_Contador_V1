@@ -1,27 +1,41 @@
 # Arquitectura Técnica
 
 ## Enfoque arquitectónico
-Se optó por una arquitectura **Client-Side Rendering (CSR)** pura, eliminando la necesidad de un backend propio (Backend-For-Frontend). Esto responde al requerimiento de un "MVP directo contra la API". Toda la comunicación se realiza vía peticiones HTTP estándar gestionadas desde el navegador usando `fetch`.
+Se utiliza una arquitectura de **Single Page Application (SPA)** con un **Backend-for-Frontend (BFF) ligero** en desarrollo y **Edge Rewrites** en producción. 
+
+- **Desarrollo**: Un servidor Express (`server.ts`) actúa como proxy inverso para redirigir las peticiones `/api/*` a la API real de SOS Contador, resolviendo problemas de CORS y centralizando logs de tráfico.
+- **Producción (Vercel)**: Se emplean reglas nativas de `vercel.json` para realizar el forwarding de peticiones sin latencia de servidor intermedio.
+
+## Sistema de Caché (Performance Vibe)
+Dada la naturaleza de reporte de la aplicación, se implementó `ApiCache` en `sos.ts`:
+- **TTL**: 3 minutos por default.
+- **Inmutabilidad**: Los datos se clonan al entrar y salir del caché para evitar efectos colaterales en la UI.
+- **Aislamiento**: Las claves de caché incluyen el JWT para evitar colisiones entre sesiones.
 
 ## Modelo de datos
-Al no disponer de base de datos propia, los datos son efímeros y provienen estrictamente de los endpoints consumidos:
-- Sesión / Credenciales: `jwt` y `jwtc`.
-- Contribuyentes: `cuit`, `idcuit`, `razon_social`.
-- Clientes: array de entidades.
-- IVAVentas: array de comprobantes (`fecha`, `neto`, `iva`, `total`).
+Los datos son efímeros y provienen de los endpoints consumidos, organizados en:
+- **Sesión**: `jwt` (Global) y `jwtc` (CUIT específico).
+- **Entidades Contables**: `Planes de Cuentas`, `Libros Mayor`, `Sumas y Saldos`.
+- **Entidades Impositivas**: `Comprobantes de Venta`, `Comprobantes de Compra`, `Reportes IVA`.
+- **Contribuyentes**: `CUITs` y su metadata de conexión.
 
 ## Gestión de estado global
-Se emplea **React Context API** (`AuthContext`) como gestor de estado para las sesiones y el CUIT activo, garantizando un flujo descendente claro de los tokens de autenticación `jwt` (master) y `jwtc` (cuit-specific token) requeridos por SOS Contador.
-Para la gestión local a nivel de vista (listados y filtros) se utilizan Hooks tradicionales de React (`useState`, `useEffect`).
+Se emplea **React Context API** (`AuthContext`) para:
+- Tokens de sesión.
+- Información del CUIT Activo (`selectedCuit`).
+- Estado de autenticación global.
+
+Para listados específicos y estados de carga locales, se utilizan Hooks de React (`useState`, `useEffect`) integrando el patrón de **Early Return** para manejo de errores.
 
 ## Decisiones de UX/UI
-- **Enfoque Mobile-First**: La barra lateral (Sidebar) es responsiva, ocultándose y apareciendo desde un menú tipo hamburguesa en pantallas pequeñas.
-- Todo en pantalla debe estar en lenguaje español claro, orientado a contadores de Argentina (Términos: "Débito Fiscal", "CUIT", "Razón Social").
-- Componentes modulares y fácilmente separables con retroalimentación visual al usuario (Loading spinners/text, Toasts/Mensajes de error integrados).
+- **Atomic Design**: Componentes aislados y reutilizables para tablas, tarjetas y selectores.
+- **Resiliencia Visual**: Todos los componentes manejan estados de *Loading*, *Empty* y *Error*.
+- **Visualización de Datos**: Integración de `Recharts` para convertir payloads JSON en gráficos dinámicos (Dashboard Home).
 
-## Almacenamiento LocaL
-Se utiliza `localStorage` únicamente para almacenar:
-- Token de login `jwt`.
-- Token CUIT `jwtc`.
-- Información del CUIT seleccionado `selectedCuit`.
-Esto garantiza la persistencia en recargas de navegador y facilita la vuelta a la aplicación sin reautenticación si los tokens no han caducado.
+## Almacenamiento Local
+Se preserva en `localStorage`:
+- `jwt`: Token maestro del usuario.
+- `jwtc`: Último token de CUIT activo.
+- `selectedCuit`: Detalle de la empresa seleccionada.
+- `lastUsedCuitId`: Para reconexión rápida.
+

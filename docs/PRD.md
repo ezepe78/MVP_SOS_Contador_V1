@@ -1,63 +1,70 @@
 # PRD (Product Requirements Document)
 
 ## 1. Descripción del Producto
-Dashboard para estudios contables en Argentina que permite la ágil consulta de clientes y visualización de totales de IVA correspondientes a un CUIT específico operando contra public APIs de SOS Contador.
+Dashboard para estudios contables en Argentina que permite la ágil consulta de clientes, reportes impositivos (IVA) y estados contables (Mayor, Sumas y Saldos) operando contra APIs de SOS Contador.
 
 ## 2. Planteamiento del Problema
-El acceso habitual a los informes básicos como Libros IVA Ventas en plataformas contables completas suele requerir múltiples clics y flujo de pantallas. Un entorno tipo Dashboard enfocado exclusivamente a reportes ahorra tiempo.
+Los contadores pierden tiempo navegando en sistemas ERP complejos para obtener datos rápidos de control. Este Dashboard centraliza la información vital en una interfaz de alto rendimiento.
 
 ## 3. Objetivos del Producto
-- Minimizar el tiempo que tarda un contador en ver cuánto Débito Fiscal tiene generado una empresa hoy.
-- Evitar procesos intermedios, proporcionando una conexión simple a la API.
+- Reducir el tiempo de consulta de Débito y Crédito Fiscal.
+- Proporcionar una visión gerencial rápida (gráficos) de la evolución operativa.
+- Facilitar el acceso a mayores contables sin interrupciones de flujo.
 
 ## 4. Usuarios Objetivo
 - Contadores Públicos.
-- Administrativos o Asistentes de Estudios Contables en Argentina.
+- Administrativos contables.
+- Dueños de PYMEs que usan SOS Contador como plataforma base.
 
 ## 5. Alcance
-Queda cubierto el inicio de sesión vía SOS Contador y la lectura paginada de clientes + Libro de IVA Ventas. Fuera de alcance: Modificación/Edición de datos y Subida de comprobantes AFIP.
+Lectura y visualización de datos:
+- Dashboard de Ventas/Compras (Gráficos).
+- Listado de Clientes/Proveedores.
+- Libros IVA (Ventas y Compras).
+- Contabilidad: Libro Mayor y Sumas y Saldos.
+*Fuera de alcance: Alta/Baja/Modificación (ABM) de registros.*
 
 ## 6. Módulos Funcionales
-MF1: Autenticación.
-MF2: Emulación de Operador CUIT (Selección).
-MF3: Módulo Analítico de Clientes (Paginated Data Retrieval).
-MF4: Módulo Impositivo IVA Ventas (Monthly Aggregations Retrieval).
+MF1: **Autenticación Adaptativa**: Manejo de sesiones persistentes.
+MF2: **Selector Multi-Empresa**: Búsqueda y selección de CUIT con generación de JWTC.
+MF3: **Dashboard Home**: Analítica visual con Recharts (Ventas vs Compras).
+MF4: **Módulo Impositivo**: Consulta de IVA Ventas e IVA Compras por período.
+MF5: **Módulo Contable**: Libro Mayor con búsqueda por cuenta y Sumas y Saldos a fecha.
+MF6: **Gestor de Clientes**: Maestro de clientes/proveedores con búsqueda real-time.
 
 ## 7. Flujos de Usuario
 Ver `FLUJO_USUARIO.md`
 
 ## 8. Reglas de Negocio
 - Toda consulta depende del `jwtc` (Token Específico de Relación CUIT).
-- La información mostrada proviene en tiempo real y no se guarda internamente de un día para otro (excepto tokens temporales).
+- Los datos se sirven con caché efímero (3 min) para optimizar la performance sin perder actualidad.
+- Los reportes contables dependen de la definición del `ejercicio` fiscal activo.
 
 ## 9. Modelo de Datos
-N/A - Direct Passthrough (Se utiliza el output puro entregado en payload JSON por API HTTP GET).
+Efímero (Client-Side State). Consumo directo de JSON API.
 
 ## 10. Requisitos de la API
-- Comunicación con CORS permitido o uso de Headers en Frontend.
-- Endpoints: `/login`, `/cuit/listado`, `/cuit/credentials/:idcuit`, `/cliente/listado`, `/libroivaventa/listado/:ejercicio`.
+- Proxy Reverse local para bypass de CORS.
+- Endpoints: `/login`, `/cuit/listado`, `/cuit/credentials`, `/cliente/listado`, `/libroivaventa/listado`, `/libroivacompra/listado`, `/mayor/listado`, `/sumasysaldos/listado`.
 
 ## 11. Requisitos No Funcionales
-- Respuesta rápida en Frontend (Cargando Asíncrono).
-- Sin Backends acoplados que requieran mantención para el código en sí.
+- **Vibe Performance**: Transiciones suaves (Motion) y carga asíncrona no bloqueante.
+- **Caché Layer**: Reducción de llamadas redundantes a la API.
 
 ## 12. Requisitos de UX
-- Simple, Limpio. Menú visual estático lateral y grandes tarjetas de información en métricas vitales (Totales $).
+- Diseño Premium (Dark/Light compatible).
+- Sidebar persistente con estado de CUIT activo visible.
+- Feedback inmediato en acciones de carga.
 
 ## 13. Casos Extremos
-- Token Vencido (API error de Autorización 4XX) devuelve al login.
-- Sin clientes -> Muestra "sin resultados" estilizado.
+- API Offline: Pantalla de error con opción de reintento.
+- Sesión Expirada: Redirección automática al Login con guardado de última ruta.
 
-## 14. Métricas (Futuro)
-- Cantidad de logins exitosos.
-- Cantidad de consultas de mes.
+## 14. Seguridad
+- Cifrado TLS en tránsito.
+- Almacenamiento seguro de tokens en LocalStorage.
+- Limpieza de caché al cerrar sesión.
 
-## 15. Seguridad y Cumplimiento
-- Credenciales encriptadas vía TLS en las peticiones de fetch HTTP nativo.
-- JWT persistido temporalmente en LocalStorage bajo políticas del explorador.
-
-## 16. Arquitectura Técnica
+## 15. Arquitectura Técnica
 Ver `ARQUITECTURA.md`
 
-## 17. Hoja de Ruta
-Ver `ROADMAP.md`

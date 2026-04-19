@@ -1,25 +1,36 @@
 # Roadmap y Plan de Evolución
 
 ## Estado actual del desarrollo
-**FASE 1: MVP Completado**
+**FASE 1: MVP Completado** ✅
 - Integración real con flujo completo de autenticación de SOS Contador (DOBLE JWT).
-- Interfaz gráfica básica (Login, Selector de CUIT, Sidebar de navegación).
+- Interfaz gráfica base (Login, Selector de CUIT, Sidebar).
 - Módulo de consulta de clientes (Paginación y Buscador).
 - Módulo de Libro IVA Ventas (Filtros por período).
 
+**FASE 2: Optimizaciones y Estabilidad** ✅
+- Intercepción global de errores (Log-out automático 4xx).
+- Sistema de **Caché persistente (TTL 3m)** para optimización de API calls.
+- Proxy Server local para desarrollo y Rewrites en Vercel.
+- Soporte para TypeScript estricto.
+
+**FASE 3: Inteligencia Contable (En Progreso)** 🚀
+- [x] Dashboard Home con gráficos de evolución (Ventas vs Compras) usando Recharts.
+- [x] Módulo de Libro IVA Compras.
+- [x] Módulo de Libro Mayor con búsqueda granular.
+- [x] Módulo de Sumas y Saldos.
+- [ ] Exportación a PDF/Excel de reportes.
+
 ## Fases futuras organizadas de manera lógica
 
-### FASE 2: Optimizaciones y Manejo de Errores
-- Intercepción global de errores (Automático log-out en 401).
-- PWA (Progressive Web App) para uso como aplicación nativa en celulares.
-- Persistencia mejorada y manejo de expiración de JWT.
+### FASE 4: Experiencia Integral y Pulido
+- PWA (Progressive Web App) para instalación en dispositivos móviles.
+- Modo Oscuro nativo basado en preferencias de sistema.
+- Animaciones refinadas con Motion para transiciones entre módulos.
+- Implementación de Tests unitarios y de integración para el wrapper de API.
 
-### FASE 3: Nuevos Módulos
-- Módulo de Compras (Libro IVA Compras - Crédito Fiscal).
-- Resumen/Dashboard Home con gráficos de evolución (usando Recharts).
-- Exportación en CSV o Excel de los listados consultados.
+### FASE 5: BI y Analítica Avanzada
+- Alertas de discrepancias entre libros IVA y contabilidad.
+- Generador de reportes comparativos interanuales.
+- Integración con notificaciones de AFIP (Ventanilla Electrónica).
+- Dashboard multi-cuit (comparativa entre empresas del mismo estudio).
 
-### FASE 4: Experiencia Integral
-- Modo Oscuro automático según el sistema operativo.
-- Personalización del panel según preferencias del contador.
-- Configuración de alertas de vencimientos impositivos de AFIP.

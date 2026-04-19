@@ -1,25 +1,33 @@
 # Dashboard SOS Contador
 
 ## Descripción general del sistema
-MVP (Producto Mínimo Viable) de un dashboard web para contadores en Argentina, integrado directamente con la API pública de SOS Contador sin necesidad de un backend intermediario.
+MVP (Producto Mínimo Viable) de un dashboard web de alto rendimiento para contadores en Argentina. Se integra con la API de SOS Contador utilizando un sistema de **Proxy Seguro** para gestionar CORS y autenticación, ofreciendo una experiencia fluida y rápida "vibe-driven".
 
 ## Objetivo del proyecto
-Brindar una interfaz simplificada, amigable y moderna para que los contadores puedan consultar rápidamente la cartera de clientes de un contribuyente específico y acceder a los totales y detalles mensuales del Libro IVA Ventas.
+Optimizar la labor contable permitiendo consultas inmediatas de indicadores clave (IVA, Libro Mayor, Sumas y Saldos) sin la complejidad de navegar por múltiples menús de gestión.
 
 ## Características principales
-- **Autenticación real (DOBLE JWT)**: Integración con el sistema de tokens de SOS Contador (JWT master y JWT-CUIT).
-- **Selección de Contribuyente**: Permite elegir con qué CUIT se desea operar.
-- **Consultas Rápidas**: Visualización paginada y con buscador de clientes.
-- **Libro IVA Ventas**: Detalle mensual de importes netos, IVA (débito fiscal) y total general.
+- **Autenticación Robusta**: Manejo de doble JWT (Master y CUIT) con persistencia inteligente.
+- **Caché Inteligente**: Sistema de caché en memoria (TTL 3m) para minimizar latencia y consumo de API.
+- **Dashboard Gerencial**: Visualización gráfica mediante Recharts de Ventas y Compras.
+- **Módulos Impositivos**: Libro IVA Ventas e IVA Compras con desglose de alícuotas.
+- **Módulos Contables**: Consulta ágil de Plan de Cuentas, Libro Mayor y Sumas y Saldos.
+- **Gestión de Clientes**: Listado paginado con búsqueda asíncrona.
 
 ## Stack tecnológico utilizado
-- Frontend: React (Hooks)
-- Estilos: Tailwind CSS, Lucide React (Íconos)
-- Construcción y empaquetado: Vite
-- Lenguaje: TypeScript
+- **Core**: React 19 + TypeScript.
+- **Build Tool**: Vite 6.
+- **Proxy**: Express + http-proxy-middleware (Local) / Vercel Rewrites (Producción).
+- **Styling**: Tailwind CSS 4 + Lucide React (Íconos).
+- **Animaciones**: Motion.
+- **Gráficos**: Recharts.
 
-## Instrucciones básicas para ejecutar el proyecto en entorno local
+## Instrucciones para ejecución local
 1. Instalar dependencias: `npm install`
-2. Configurar variable de entorno (Opcional): `VITE_API_BASE_URL` si se desea cambiar el endpoint base de la API.
-3. Levantar servidor local: `npm run dev`
-4. Acceder vía `http://localhost:3000` (el puerto puede variar según Vite).
+2. Levantar el entorno de desarrollo: `npm run dev`
+   - Esto inicia un servidor Express en el puerto **3000** que sirve el proxy de API y el middleware de Vite.
+3. Acceder vía `http://localhost:3000`.
+
+---
+*Nota: Para despliegue en Vercel, se utiliza la configuración en `vercel.json` que mapea los rewrites de `/api/*` directamente a la API de SOS Contador.*
+
