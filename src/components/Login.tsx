@@ -13,24 +13,31 @@ export const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("[v0] handleSubmit iniciado - email:", email, "password length:", password.length);
     setIsLoading(true);
     setError('');
 
     try {
+      console.log("[v0] Llamando a sosApi.login...");
       const response = await sosApi.login(email, password);
+      console.log("[v0] Respuesta de login:", response);
       
       // Ajuste heuristico para la respuesta de login
       const token = response?.jwt || response?.token || response?.access_token;
+      console.log("[v0] Token extraído:", token ? "SÍ (longitud: " + token.length + ")" : "NO");
       
       if (token) {
+        console.log("[v0] Guardando JWT y redirigiendo...");
         setJwt(token);
         if (response.cuits && Array.isArray(response.cuits)) {
            setCachedCuits(response.cuits);
         }
       } else {
+        console.log("[v0] No se encontró token en la respuesta");
         setError('No se recibió el token de autenticación del servidor');
       }
     } catch (err: any) {
+      console.log("[v0] Error en login:", err);
       setError(err?.message || 'Error al iniciar sesión');
     } finally {
       setIsLoading(false);

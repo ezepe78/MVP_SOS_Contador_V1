@@ -19,9 +19,13 @@ async function startServer() {
     target: targetApi,
     changeOrigin: true,
     pathRewrite: { '^/api': '' }, // Eliminamos /api para que se añada al base URL del target
-    onProxyReq: (proxyReq) => {
+    onProxyReq: (proxyReq, req) => {
         // Log outgoing proxy requests for debugging
-        console.log(`[PROXY] ${proxyReq.method} ${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`);
+        console.log(`[PROXY] Incoming: ${req.method} ${req.url}`);
+        console.log(`[PROXY] Forwarding to: ${proxyReq.protocol}//${proxyReq.host}${proxyReq.path}`);
+    },
+    onProxyRes: (proxyRes, req) => {
+        console.log(`[PROXY] Response: ${proxyRes.statusCode} for ${req.url}`);
     },
     onError: (err, req, res) => {
         console.error('[PROXY ERROR]', err);
